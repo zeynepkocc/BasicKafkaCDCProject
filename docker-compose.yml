@@ -1,0 +1,58 @@
+version: '3.9'
+services:
+  zookeeper:
+    image: confluentinc/cp-zookeeper:6.2.0
+    ports:
+      - '2181:2181'
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+    volumes:
+      - ./zookeeper-data:/var/lib/zookeeper/data
+    networks:
+      - zkoc_my_network
+
+  kafka:
+    image: confluentinc/cp-kafka:6.2.0
+    depends_on:
+      - zookeeper
+    ports:
+      - '9092:9092'
+    networks:
+      - zkoc_my_network
+    environment:
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+    volumes:
+      - ./kafka-data:/var/lib/kafka/data
+
+  a_app:
+    build:
+      context: ./producer
+      dockerfile: Dockerfile
+    container_name: zkoc-a_app
+    environment:
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+    depends_on:
+      - kafka
+    networks:
+      - zkoc_my_network
+
+  b_app:
+    build:
+      context: ./consumer
+      dockerfile: Dockerfile
+    container_name: zkoc-b_app
+    environment:
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+    depends_on:
+      - kafka
+    networks:
+      - zkoc_my_network
+
+networks:
+  zkoc_my_network:
+    driver: bridge
