@@ -1,0 +1,2 @@
+# BasicKafkaCDCProject
+ Apache Kafka Projesi
